@@ -34,3 +34,13 @@ spec:
               name: humangov-nginx-service-rio-de-janeiro
               port:
                 number: 80
+    - host: staging.humangov-prs.click
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: humangov-nginx-service-staging
+              port:
+                number: 80           

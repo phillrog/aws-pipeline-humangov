@@ -15,7 +15,7 @@ spec:
       serviceAccountName: humangov-pod-execution-role
       containers:
       - name: humangov-python-app-staging
-        image: public.ecr.aws/k5z6r9x6/humangov-app:latest
+        image: CONTAINER_IMAGE
         env:
         - name: AWS_BUCKET
           value: "humangov-staging-s3-4ld6"

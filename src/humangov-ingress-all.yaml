@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: humangov-python-app-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: frontend
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:183023889344:certificate/7ddd1f7b-f279-4734-b23f-4c7101906ea4
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+  labels:
+    app: humangov-python-app-ingress
+spec:
+  ingressClassName: alb
+  rules:
+    - host: sao-paulo.humangov-prs.click
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: humangov-nginx-service-sao-paulo
+              port:
+                number: 80
+    - host: rio-de-janeiro.humangov-prs.click
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: humangov-nginx-service-rio-de-janeiro
+              port:
+                number: 80

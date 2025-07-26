@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: humangov-python-app-rio-de-janeiro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: humangov-python-app-rio-de-janeiro
+  template:
+    metadata:
+      labels:
+        app: humangov-python-app-rio-de-janeiro
+    spec:
+      serviceAccountName: humangov-pod-execution-role
+      containers:
+      - name: humangov-python-app-rio-de-janeiro
+        image: public.ecr.aws/k5z6r9x6/humangov-app:latest
+        env:
+        - name: AWS_BUCKET
+          value: "humangov-rio-de-janeiro-s3-2i93"
+        - name: AWS_DYNAMODB_TABLE
+          value: "humangov-rio-de-janeiro-dynamodb"
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: US_STATE
+          value: "rio-de-janeiro"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: humangov-python-app-service-rio-de-janeiro
+spec:
+  type: ClusterIP
+  selector:
+    app: humangov-python-app-rio-de-janeiro
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: humangov-nginx-reverse-proxy-rio-de-janeiro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: humangov-nginx-reverse-proxy-rio-de-janeiro
+  template:
+    metadata:
+      labels:
+        app: humangov-nginx-reverse-proxy-rio-de-janeiro
+    spec:
+      containers:
+      - name: humangov-nginx-reverse-proxy-rio-de-janeiro
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: humangov-nginx-config-rio-de-janeiro-vol
+          mountPath: /etc/nginx/
+      volumes:
+      - name: humangov-nginx-config-rio-de-janeiro-vol
+        configMap:
+          name: humangov-nginx-config-rio-de-janeiro
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: humangov-nginx-service-rio-de-janeiro
+spec:
+  selector:
+    app: humangov-nginx-reverse-proxy-rio-de-janeiro
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: humangov-nginx-config-rio-de-janeiro
+data:
+  nginx.conf: |
+
+    events {
+      worker_connections 1024;
+    }
+
+    http {
+
+      server {
+        listen 80;
+
+        location / {
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_pass http://humangov-python-app-service-rio-de-janeiro:8000; # App container
+        }
+      }
+    }
+  
+  proxy_params: |
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
